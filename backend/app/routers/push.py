@@ -33,9 +33,8 @@ class EndpointIn(BaseModel):
 
 @router.get("/push/public-key")
 def public_key(settings: Settings = Depends(get_settings)) -> dict:
-    if not push_enabled(settings):
-        raise HTTPException(status_code=404, detail="Push upozornění nejsou nakonfigurována")
-    return {"public_key": settings.vapid_public_key}
+    # Bez konfigurace vrací null (ne 404), aby se každá stránka nehlásila jako chyba v konzoli.
+    return {"public_key": settings.vapid_public_key if push_enabled(settings) else None}
 
 
 @router.post("/me/push-subscriptions", status_code=201)

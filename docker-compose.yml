@@ -1,0 +1,41 @@
+name: checkin
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: checkin
+      POSTGRES_USER: checkin
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Nastavte POSTGRES_PASSWORD v souboru .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U checkin -d checkin"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  backend:
+    build: ./backend
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+psycopg://checkin:${POSTGRES_PASSWORD}@db:5432/checkin
+    volumes:
+      - uploads:/data/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "${HTTP_PORT:-8080}:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  uploads:

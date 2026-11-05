@@ -68,7 +68,7 @@ def subscribe(client, headers, endpoint):
 
 def test_public_key_available_only_when_configured(client, push_env):
     assert push_env["client"].get("/push/public-key").json() == {"public_key": "BPublicKeyForTests"}
-    assert client.get("/push/public-key").status_code == 404  # bez VAPID konfigurace
+    assert client.get("/push/public-key").json() == {"public_key": None}  # bez VAPID konfigurace
 
 
 def test_subscription_requires_https_endpoint(push_env):

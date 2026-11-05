@@ -217,3 +217,18 @@ def test_password_login_can_be_disabled_when_sso_is_on(sso_settings, idp, clock,
     r = client.post("/auth/login", json={"email": "ucitel@skola.cz", "password": "heslo123"})
     assert r.status_code == 403
     assert client.get("/auth/sso/config").json()["password_login"] is False
+
+
+def test_production_config_guard():
+    from app.config import Settings, check_production_settings
+    import pytest as _pytest
+    good = Settings(environment="production", database_url="postgresql+psycopg://u:p@db/x",
+                    secret_key="k" * 40, frontend_url="https://checkin.skola.cz")
+    check_production_settings(good)  # nic nevyhodí
+    with _pytest.raises(RuntimeError, match="SECRET_KEY"):
+        check_production_settings(Settings(environment="production", database_url="postgresql+psycopg://u:p@db/x",
+                                           frontend_url="https://checkin.skola.cz"))
+    with _pytest.raises(RuntimeError, match="SQLite"):
+        check_production_settings(Settings(environment="production", secret_key="k" * 40,
+                                           frontend_url="https://checkin.skola.cz"))
+    check_production_settings(Settings(environment="development"))  # vývoj nekontroluje nic

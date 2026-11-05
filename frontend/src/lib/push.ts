@@ -14,8 +14,8 @@ export async function pushSupport(): Promise<{ supported: boolean; publicKey?: s
   try {
     const registration = await navigator.serviceWorker.getRegistration();
     if (!registration) return { supported: false };
-    const { public_key } = await api<{ public_key: string }>('/push/public-key');
-    return { supported: true, publicKey: public_key };
+    const { public_key } = await api<{ public_key: string | null }>('/push/public-key');
+    return public_key ? { supported: true, publicKey: public_key } : { supported: false };
   } catch {
     return { supported: false }; // server nemá VAPID nebo není přihlášen
   }

@@ -6,6 +6,7 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True)
 class Settings:
+    environment: str = "development"  # "production" zapíná přísné kontroly konfigurace
     database_url: str = "sqlite:///./checkin.db"
     secret_key: str = "dev-secret-change-me"
     qr_window_seconds: int = 15  # QR kód se mění každých N sekund
@@ -33,6 +34,7 @@ class Settings:
 def load_settings() -> Settings:
     """Načte nastavení z proměnných prostředí (čte se při každém volání)."""
     return Settings(
+        environment=os.getenv("ENVIRONMENT", "development"),
         database_url=os.getenv("DATABASE_URL", "sqlite:///./checkin.db"),
         secret_key=os.getenv("SECRET_KEY", "dev-secret-change-me"),
         qr_window_seconds=int(os.getenv("QR_WINDOW_SECONDS", "15")),
@@ -54,3 +56,23 @@ def load_settings() -> Settings:
         vapid_public_key=os.getenv("VAPID_PUBLIC_KEY") or None,
         vapid_subject=os.getenv("VAPID_SUBJECT", "mailto:checkin@example.org"),
     )
+
+
+DEFAULT_SECRET = "dev-secret-change-me"
+
+
+def check_production_settings(settings: Settings) -> None:
+    """V produkci odmítne nebezpečnou konfiguraci dříve, než se služba spustí."""
+    if settings.environment != "production":
+        return
+    problems = []
+    if settings.secret_key == DEFAULT_SECRET or len(settings.secret_key) < 32:
+        problems.append("SECRET_KEY musí být náhodný řetězec alespoň 32 znaků")
+    if settings.database_url.startswith("sqlite"):
+        problems.append("DATABASE_URL v produkci nesmí být SQLite")
+    if settings.oidc_issuer and settings.oidc_redirect_uri and not settings.oidc_redirect_uri.startswith("https://"):
+        problems.append("OIDC_REDIRECT_URI musí používat HTTPS")
+    if not settings.frontend_url.startswith("https://"):
+        problems.append("FRONTEND_URL musí používat HTTPS")
+    if problems:
+        raise RuntimeError("Neplatná produkční konfigurace: " + "; ".join(problems))

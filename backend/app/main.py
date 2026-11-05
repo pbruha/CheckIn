@@ -6,7 +6,7 @@ from datetime import datetime
 import httpx
 from fastapi import FastAPI
 
-from .config import Settings, load_settings
+from .config import Settings, check_production_settings, load_settings
 from .db import Base, make_session_factory
 from .push import default_sender
 from .routers import academics, attendance, auth, excuses, push, sso
@@ -20,6 +20,7 @@ def create_app(
 ) -> FastAPI:
     """Továrna aplikace. Nastavení a hodiny lze podstrčit (testy, různá prostředí)."""
     settings = settings or load_settings()
+    check_production_settings(settings)
     engine, session_factory = make_session_factory(settings.database_url)
     Base.metadata.create_all(engine)
 
