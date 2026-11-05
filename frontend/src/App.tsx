@@ -8,6 +8,8 @@ import { TeacherSession } from './pages/TeacherSession';
 import { GroupStats } from './pages/GroupStats';
 import { StudentDashboard } from './pages/StudentDashboard';
 import { StudentCheckin } from './pages/StudentCheckin';
+import { StudentExcuses } from './pages/StudentExcuses';
+import { TeacherExcuses } from './pages/TeacherExcuses';
 
 function RequireAuth({ children, teacherOnly = false }: { children: ReactNode; teacherOnly?: boolean }) {
   const { user, loading } = useAuth();
@@ -48,6 +50,16 @@ export default function App() {
             }
           />
           <Route
+            path="/teacher/excuses"
+            element={
+              <RequireAuth teacherOnly>
+                <Layout title="Omluvenky">
+                  <TeacherExcuses />
+                </Layout>
+              </RequireAuth>
+            }
+          />
+          <Route
             path="/teacher/sessions/:id"
             element={
               <RequireAuth teacherOnly>
@@ -73,6 +85,16 @@ export default function App() {
               <RequireAuth>
                 <Layout title="Moje docházka">
                   <StudentDashboard />
+                </Layout>
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/student/excuses"
+            element={
+              <RequireAuth>
+                <Layout title="Omluvenky">
+                  <StudentExcuses />
                 </Layout>
               </RequireAuth>
             }

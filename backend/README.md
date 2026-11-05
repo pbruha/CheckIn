@@ -28,6 +28,8 @@ uvicorn --factory app.main:create_app --reload
 | `LATE_MINUTES` | `10` | hranice pro pozdní příchod |
 | `ABSENCE_LIMIT` | `2` | povolený počet neomluvených absencí |
 | `TOKEN_TTL_HOURS` | `12` | platnost přihlášení |
+| `UPLOAD_DIR` | `./uploads` | složka pro přílohy omluvenek (zálohovat, nepublikovat) |
+| `MAX_UPLOAD_BYTES` | `5242880` | maximální velikost přílohy (5 MB) |
 
 ## Testy
 
@@ -63,5 +65,8 @@ cd backend && python -m pytest -q
 - **Audit** – u každého zápisu čas, způsob a IP adresa.
 - **Zápis jen zapsaným studentům** a jen v běžící hodině.
 
-Zatím neimplementováno (plán verzí 2 a 3): omluvenky, notifikace, geofence, SSO, WebSockety
-(živý přehled je zatím přes dotaz/polling), frontend PWA, mazání dat po roce.
+Omluvenka: schválená se u běžící hodiny promítne při uzavření, u uzavřené hodiny okamžitě.
+Omluvená absence se nepočítá do limitu.
+
+Zatím neimplementováno (plán verze 3): geofence, SSO, WebSockety
+(živý přehled je zatím přes dotaz/polling), mazání dat po roce.

@@ -1,3 +1,3 @@
-from . import academics, attendance, auth
+from . import academics, attendance, auth, excuses
 
-__all__ = ["academics", "attendance", "auth"]
+__all__ = ["academics", "attendance", "auth", "excuses"]

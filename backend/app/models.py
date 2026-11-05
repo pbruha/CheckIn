@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, Index, String
+from sqlalchemy import DateTime, ForeignKey, Index, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from .db import Base
@@ -10,7 +10,8 @@ from .db import Base
 ROLES = ("student", "teacher", "admin")
 SESSION_STATUSES = ("ready", "running", "closed")
 ATTENDANCE_STATUSES = ("present", "late", "absent", "excused")
-METHODS = ("qr", "code", "manual", "auto")
+METHODS = ("qr", "code", "manual", "auto", "excuse")
+EXCUSE_STATUSES = ("pending", "approved", "rejected")
 
 
 class User(Base):
@@ -76,3 +77,23 @@ class Attendance(Base):
     recorded_at: Mapped[datetime] = mapped_column(DateTime)
     device_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)  # HMAC, ne surový identifikátor
     ip: Mapped[str | None] = mapped_column(String(64), nullable=True)
+
+
+class Excuse(Base):
+    """Omluvenka studenta k jedné hodině. Schválení nastaví stav „omluven“ v docházce."""
+
+    __tablename__ = "excuses"
+    __table_args__ = (UniqueConstraint("user_id", "session_id", name="uq_excuse_user_session"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    session_id: Mapped[int] = mapped_column(ForeignKey("lesson_sessions.id"), index=True)
+    text: Mapped[str] = mapped_column(String(2000))
+    status: Mapped[str] = mapped_column(String(20), default="pending")
+    created_at: Mapped[datetime] = mapped_column(DateTime)
+    attachment_path: Mapped[str | None] = mapped_column(String(300), nullable=True)  # relativní název v upload_dir
+    attachment_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    attachment_type: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    decided_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    decided_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
+    decision_note: Mapped[str | None] = mapped_column(String(500), nullable=True)

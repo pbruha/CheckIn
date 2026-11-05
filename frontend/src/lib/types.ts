@@ -64,3 +64,30 @@ export type GroupStats = {
   }[];
   sessions: { session_id: number; starts_at: string; present: number; enrolled: number }[];
 };
+
+export type Excuse = {
+  id: number;
+  session_id: number;
+  status: 'pending' | 'approved' | 'rejected';
+  text: string;
+  has_attachment: boolean;
+  attachment_name: string | null;
+  created_at: string;
+  decided_at: string | null;
+  decision_note: string | null;
+};
+
+export type ManagedExcuse = Excuse & {
+  student: { id: number; name: string; email: string };
+  session: Lesson;
+  group: { id: number; name: string };
+};
+
+export type Notification = {
+  type: 'absence_limit' | 'excuse_decision' | 'pending_excuses';
+  level: 'info' | 'warning' | 'danger';
+  text: string;
+  group?: string;
+  note?: string | null;
+  count?: number;
+};

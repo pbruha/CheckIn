@@ -27,7 +27,10 @@ export function StudentDashboard() {
         </p>
         {data.remaining === 0 && data.absences > 0 && <p className="error">Dosáhl jste limitu absencí.</p>}
         {data.remaining === 1 && <p className="warning-text">Zbývá už jen 1 povolená absence.</p>}
-        <Link to="/student/checkin" className="button primary">Zapsat docházku</Link>
+        <div className="row wrap">
+          <Link to="/student/checkin" className="button primary">Zapsat docházku</Link>
+          <Link to="/student/excuses" className="button">Omluvenky</Link>
+        </div>
       </section>
 
       <h2>Hodiny</h2>
@@ -47,6 +50,9 @@ export function StudentDashboard() {
                 <td>{formatDateTime(item.starts_at)}</td>
                 <td>{item.group_name}</td>
                 <td>
+                  {item.status === 'absent' && (
+                    <Link to={`/student/excuses?session=${item.session_id}`} className="small">Omluvit → </Link>
+                  )}
                   {item.status ? statusLabel(item.status) : item.session_status === 'ready' ? 'Naplánováno' : item.session_status === 'running' ? 'Probíhá' : 'Nezapsán'}
                 </td>
               </tr>

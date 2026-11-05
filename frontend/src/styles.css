@@ -135,3 +135,13 @@ th { font-size: 0.85rem; color: var(--muted); font-weight: 600; }
   .container { padding: 0.75rem; }
   .card { padding: 0.8rem; }
 }
+
+.notifications { list-style: none; padding: 0; margin: 0 0 1rem; display: flex; flex-direction: column; gap: 0.5rem; }
+.notice { border-radius: var(--radius); padding: 0.6rem 0.8rem; border: 1px solid var(--border); background: var(--surface); }
+.notice-warning { border-color: var(--warning); background: var(--warning-bg); }
+.notice-danger { border-color: var(--danger); color: var(--danger); }
+.notice-info { border-color: var(--primary); }
+.badge-excuse-pending { border-color: var(--warning); color: var(--warning); }
+.badge-excuse-approved { border-color: var(--success); color: var(--success); }
+.badge-excuse-rejected { border-color: var(--danger); color: var(--danger); }
+textarea { font: inherit; padding: 0.5rem; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); width: 100%; }
