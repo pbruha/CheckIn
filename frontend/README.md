@@ -38,3 +38,13 @@ Odkaz v QR kódu míří na `/student/checkin?s=<hodina>&t=<token>`; přihláše
 - Přihlašovací token je uložen v `localStorage` (a při chybě 401 se uživatel odhlásí).
 - ID zařízení pro kontrolu „jedno zařízení = jeden student“ je také v `localStorage`.
 - Service worker cachuje jen aplikační shell; API odpovědi se nikdy necachují.
+
+## Instalace jako aplikace (PWA)
+
+Aplikace se dá nainstalovat bez obchodu s aplikacemi. Potřebuje HTTPS (kromě `localhost`) a produkční build.
+
+- **Počítač (Chrome, Edge)**: ikona instalace v adresním řádku → aplikace se otevře v samostatném okně.
+- **Android (Chrome)**: menu ⋮ → „Přidat na plochu“ / „Nainstalovat aplikaci“.
+- **iPhone (Safari)**: Sdílet → „Přidat na plochu“. Ikona je z `icon-180.png`.
+
+Upozornění (Web Push) na iPhonu funguje až po přidání na plochu, a to jen na iOS 16.4 a novější.
