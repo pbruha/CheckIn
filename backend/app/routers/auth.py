@@ -31,6 +31,8 @@ def login(
     settings: Settings = Depends(get_settings),
     now: datetime = Depends(get_now),
 ) -> dict:
+    if settings.oidc_issuer and not settings.sso_password_login:
+        raise HTTPException(status_code=403, detail="Přihlaste se prosím školním účtem")
     user = db.scalar(select(User).where(User.email == body.email.strip().lower()))
     if user is None or not verify_password(body.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Neplatný e-mail nebo heslo")

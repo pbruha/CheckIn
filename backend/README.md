@@ -30,6 +30,13 @@ uvicorn --factory app.main:create_app --reload
 | `TOKEN_TTL_HOURS` | `12` | platnost přihlášení |
 | `UPLOAD_DIR` | `./uploads` | složka pro přílohy omluvenek (zálohovat, nepublikovat) |
 | `MAX_UPLOAD_BYTES` | `5242880` | maximální velikost přílohy (5 MB) |
+| `OIDC_ISSUER` | – | adresa OpenID Connect poskytovatele; **nastavením se zapne přihlášení školním účtem** |
+| `OIDC_CLIENT_ID` / `OIDC_CLIENT_SECRET` | – | registrace aplikace u poskytovatele (secret je volitelný u veřejného klienta) |
+| `OIDC_REDIRECT_URI` | – | přesná adresa callbacku, např. `https://checkin.skola.cz/api/auth/sso/callback` (musí být registrována) |
+| `OIDC_SCOPES` | `openid email profile` | požadované scope |
+| `SSO_ALLOWED_DOMAIN` | – | volitelně omezí přihlášení na e-maily z této domény (např. `skola.cz`) |
+| `SSO_PASSWORD_LOGIN` | `1` | `0` vypne přihlašování heslem, když je SSO zapnuté |
+| `FRONTEND_URL` | `http://localhost:5173` | kam se přesměrovat po přihlášení (ve výrobě stejná doména) |
 
 ## Databáze a migrace
 
@@ -78,5 +85,14 @@ cd backend && python -m pytest -q
 Omluvenka: schválená se u běžící hodiny promítne při uzavření, u uzavřené hodiny okamžitě.
 Omluvená absence se nepočítá do limitu.
 
-Zatím neimplementováno (plán verze 3): SSO, WebSockety
+## Přihlášení školním účtem (SSO)
+
+Implementováno jako **OpenID Connect** (authorization code + PKCE, ověření podpisu id_tokenu přes JWKS,
+kontrola `iss`, `aud`, `exp` a `nonce`). Stav přihlášení je v podepsané, krátkodobé cookie.
+Účet se najde podle e-mailu; nový uživatel vzniká jako student bez hesla. Role učitele se přiřazuje
+ručně (CLI). **SAML zatím není podporováno.**
+
+Test bez skutečného IdP: `tests/test_sso.py` (falešný poskytovatel s vlastním klíčem).
+
+Zatím neimplementováno (plán verze 3): WebSockety
 (živý přehled je zatím přes dotaz/polling), mazání dat po roce.

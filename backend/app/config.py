@@ -15,6 +15,15 @@ class Settings:
     token_ttl_hours: int = 12
     upload_dir: str = "./uploads"
     max_upload_bytes: int = 5 * 1024 * 1024
+    # SSO (OpenID Connect). Zapnuto, pokud je nastaven oidc_issuer.
+    oidc_issuer: str | None = None
+    oidc_client_id: str | None = None
+    oidc_client_secret: str | None = None
+    oidc_redirect_uri: str | None = None  # musí být přesně registrovaná adresa callbacku
+    oidc_scopes: str = "openid email profile"
+    sso_allowed_domain: str | None = None  # např. skola.cz – omezí přihlášení na e-maily z domény
+    sso_password_login: bool = True  # lze vypnout, pokud má být přihlašování jen školním účtem
+    frontend_url: str = "http://localhost:5173"
 
 
 def load_settings() -> Settings:
@@ -29,4 +38,12 @@ def load_settings() -> Settings:
         token_ttl_hours=int(os.getenv("TOKEN_TTL_HOURS", "12")),
         upload_dir=os.getenv("UPLOAD_DIR", "./uploads"),
         max_upload_bytes=int(os.getenv("MAX_UPLOAD_BYTES", str(5 * 1024 * 1024))),
+        oidc_issuer=os.getenv("OIDC_ISSUER") or None,
+        oidc_client_id=os.getenv("OIDC_CLIENT_ID") or None,
+        oidc_client_secret=os.getenv("OIDC_CLIENT_SECRET") or None,
+        oidc_redirect_uri=os.getenv("OIDC_REDIRECT_URI") or None,
+        oidc_scopes=os.getenv("OIDC_SCOPES", "openid email profile"),
+        sso_allowed_domain=(os.getenv("SSO_ALLOWED_DOMAIN") or "").lower() or None,
+        sso_password_login=os.getenv("SSO_PASSWORD_LOGIN", "1") not in ("0", "false", "no"),
+        frontend_url=os.getenv("FRONTEND_URL", "http://localhost:5173"),
     )

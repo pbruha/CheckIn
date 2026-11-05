@@ -105,3 +105,15 @@ def new_numeric_code() -> str:
 def hash_device(key: str, device_id: str) -> str:
     """Otisk zařízení – HMAC, takže z databáze nejde zpětně zjistit identifikátor zařízení."""
     return _sign(key, f"device:{device_id}")
+
+
+# --- krátkodobý podepsaný stav (SSO: state, nonce, PKCE verifier) -----------
+
+def make_signed(key: str, payload: dict, now: datetime, ttl_seconds: int) -> str:
+    data = dict(payload, exp=to_epoch(now) + ttl_seconds)
+    body = base64.urlsafe_b64encode(json.dumps(data, separators=(",", ":")).encode()).decode().rstrip("=")
+    return f"{body}.{_sign(key, body)}"
+
+
+def read_signed(key: str, token: str, now: datetime) -> dict | None:
+    return read_auth_token(key, token, now)
