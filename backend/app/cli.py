@@ -35,6 +35,23 @@ def create_user(email: str, name: str, role: str, password: str | None) -> None:
         print(f"Uživatel {user.email} uložen (role: {user.role}, id: {user.id})")
 
 
+def purge(before: str, scrub_days: int | None) -> None:
+    from datetime import datetime
+
+    from .retention import cutoff_for_days, purge_before, scrub_audit
+    from .services import utcnow
+
+    settings = load_settings()
+    engine, session_factory = make_session_factory(settings.database_url)
+    Base.metadata.create_all(engine)
+    with session_factory() as db:
+        counts = purge_before(db, datetime.fromisoformat(before), settings)
+        print(f"Smazáno: {counts}")
+        if scrub_days is not None:
+            n = scrub_audit(db, cutoff_for_days(utcnow(), scrub_days))
+            print(f"Vynulována IP a otisky zařízení u {n} záznamů starších než {scrub_days} dní")
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="checkin")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -43,10 +60,16 @@ def main(argv: list[str] | None = None) -> int:
     cu.add_argument("--name", default="")
     cu.add_argument("--role", choices=ROLES, default="teacher")
     cu.add_argument("--password", help="nastaví nebo změní heslo")
+    pg = sub.add_parser("purge", help="smaže data hodin před daným datem (konec akademického roku)")
+    pg.add_argument("--before", required=True, help="YYYY-MM-DD nebo ISO datum, např. 2027-02-01")
+    pg.add_argument("--scrub-audit-days", type=int, default=None,
+                    help="zároveň vynuluje IP a otisky zařízení u záznamů starších než N dní")
     args = parser.parse_args(argv)
 
     if args.command == "create-user":
         create_user(args.email, args.name, args.role, args.password)
+    elif args.command == "purge":
+        purge(args.before, args.scrub_audit_days)
     return 0
 
 

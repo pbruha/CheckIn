@@ -40,6 +40,25 @@ uvicorn --factory app.main:create_app --reload
 
 ## Databáze a migrace
 
+Produkce: `alembic upgrade head` (s `DATABASE_URL`). Test `tests/test_migrations.py` hlídá, že migrace
+odpovídají modelům – při změně modelu přidejte revizi: `alembic revision --autogenerate -m "popis"`.
+
+Mazání dat po akademickém roce (spouštět ručně nebo z cronu):
+
+```bash
+python -m app.cli purge --before 2027-02-01 --scrub-audit-days 90
+```
+
+Smaže hodiny před datem včetně docházky, omluvenek a příloh; u zbylých záznamů starších než N dní
+vynuluje IP adresy a otisky zařízení. Účty studentů zůstávají (smazání účtu je samostatný krok).
+
+## Živý přehled (WebSocket)
+
+`WS /ws/sessions/{id}/attendance` – po připojení pošlete `{"token": "..."}`. Server posílá stav hodiny
+při každé změně (kontrola každou sekundu). Běží v jednom procesu bez sdíleného stavu, takže
+funguje i s více workery (každý spoj kontroluje DB sám).
+
+
 Schéma se zatím vytváří přes `create_all`, který **nepřidává sloupce do existujících tabulek**.
 Při změně modelu proto u vývojové databáze smažte soubor a vytvořte ji znovu. Před nasazením
 (verze s reálnými daty) je nutné zavést migrace (Alembic).
@@ -94,5 +113,5 @@ ručně (CLI). **SAML zatím není podporováno.**
 
 Test bez skutečného IdP: `tests/test_sso.py` (falešný poskytovatel s vlastním klíčem).
 
-Zatím neimplementováno (plán verze 3): WebSockety
+Zatím neimplementováno (plán verze 3): mobilní push notifikace
 (živý přehled je zatím přes dotaz/polling), mazání dat po roce.

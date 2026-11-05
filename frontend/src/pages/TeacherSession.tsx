@@ -1,13 +1,13 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
-import { api } from '../lib/api';
+import { api, getToken } from '../lib/api';
 import { buildCheckinUrl } from '../lib/checkinUrl';
 import { errorText } from '../lib/errors';
 import { formatDateTime, formatTime, statusLabel, METHOD_LABELS } from '../lib/format';
 import type { LiveAttendance, QrInfo } from '../lib/types';
 
-const LIVE_INTERVAL_MS = 3000;
+const LIVE_INTERVAL_MS = 3000; // záložní dotazování, když WebSocket neběží
 const QR_INTERVAL_MS = 4000; // QR se mění každých 15 s, token platí i v předchozím okně
 
 const EDITABLE = ['present', 'late', 'absent', 'excused'] as const;
@@ -34,10 +34,37 @@ export function TeacherSession() {
     loadLive();
   }, [loadLive]);
 
-  // Živý přehled: obnovuje se, dokud hodina neskončila.
+  // Živý přehled: primárně WebSocket (server posílá změny), dotazování jen když spojení neběží.
+  const pushConnected = useRef(false);
+  useEffect(() => {
+    const token = getToken();
+    if (!token || typeof WebSocket === 'undefined') return;
+    const proto = window.location.protocol === 'https:' ? 'wss' : 'ws';
+    const ws = new WebSocket(`${proto}://${window.location.host}/api/ws/sessions/${sessionId}/attendance`);
+    ws.onopen = () => ws.send(JSON.stringify({ token }));
+    ws.onmessage = (event) => {
+      const msg = JSON.parse(event.data);
+      if (msg.error) {
+        setError(msg.error);
+        return;
+      }
+      pushConnected.current = true;
+      setLive(msg as LiveAttendance);
+    };
+    ws.onclose = () => {
+      pushConnected.current = false;
+    };
+    return () => {
+      pushConnected.current = false;
+      ws.close();
+    };
+  }, [sessionId]);
+
   useEffect(() => {
     if (!status || status === 'closed') return;
-    const timer = setInterval(loadLive, LIVE_INTERVAL_MS);
+    const timer = setInterval(() => {
+      if (!pushConnected.current) loadLive();
+    }, LIVE_INTERVAL_MS);
     return () => clearInterval(timer);
   }, [status, loadLive]);
 

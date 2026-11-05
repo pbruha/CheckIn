@@ -106,3 +106,36 @@ def distance_m(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     dl = math.radians(lon2 - lon1)
     a = math.sin(dp / 2) ** 2 + math.cos(p1) * math.cos(p2) * math.sin(dl / 2) ** 2
     return 2 * EARTH_RADIUS_M * math.asin(math.sqrt(a))
+
+
+def live_snapshot(db: Session, lesson: LessonSession, now: datetime) -> dict:
+    """Stav hodiny pro živý přehled: všichni zapsaní studenti a jejich stav."""
+    from .models import User  # lokálně kvůli cyklickým importům
+
+    finalize_if_expired(db, lesson, now)
+    rows = db.execute(
+        select(User, Enrollment)
+        .join(Enrollment, Enrollment.user_id == User.id)
+        .where(Enrollment.group_id == lesson.group_id)
+        .order_by(User.name, User.email)
+    ).all()
+    records = {
+        r.user_id: r for r in db.scalars(select(Attendance).where(Attendance.session_id == lesson.id)).all()
+    }
+    students = []
+    counts: dict[str, int] = {"present": 0, "late": 0, "absent": 0, "excused": 0, "none": 0}
+    for user, _ in rows:
+        record = records.get(user.id)
+        status = record.status if record else "none"
+        counts[status] += 1
+        students.append(
+            {
+                "user_id": user.id,
+                "name": user.name,
+                "email": user.email,
+                "status": status,
+                "method": record.method if record else None,
+                "recorded_at": record.recorded_at.isoformat() if record else None,
+            }
+        )
+    return {"session": serialize_lesson(lesson), "counts": counts, "students": students}

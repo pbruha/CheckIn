@@ -7,7 +7,9 @@ import io
 from datetime import datetime, timedelta
 from typing import Literal
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+import asyncio
+
+from fastapi import APIRouter, Depends, HTTPException, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import Response
 from pydantic import BaseModel, Field
 from sqlalchemy import select
@@ -16,6 +18,7 @@ from sqlalchemy.orm import Session
 from ..config import Settings
 from ..deps import ensure_can_manage_group, get_current_user, get_db, get_now, get_settings, require_teacher
 from ..models import Attendance, Enrollment, Group, LessonSession, User
+from ..security import read_auth_token
 from ..security import (
     check_qr_token,
     current_window,
@@ -25,7 +28,7 @@ from ..security import (
     qr_seconds_left,
     to_epoch,
 )
-from ..services import close_lesson, distance_m, finalize_if_expired, serialize_attendance, serialize_lesson
+from ..services import close_lesson, distance_m, finalize_if_expired, live_snapshot, serialize_attendance, serialize_lesson
 from .academics import get_lesson_or_404
 
 router = APIRouter(tags=["attendance"])
@@ -270,36 +273,70 @@ def live_attendance(
     teacher: User = Depends(require_teacher),
     now: datetime = Depends(get_now),
 ) -> dict:
-    """Živý přehled hodiny: všichni zapsaní studenti a jejich stav."""
+    """Živý přehled hodiny (REST varianta; WebSocket viz níže)."""
     lesson, _ = _lesson_for_teacher(db, session_id, teacher)
-    finalize_if_expired(db, lesson, now)
-    rows = db.execute(
-        select(User, Enrollment)
-        .join(Enrollment, Enrollment.user_id == User.id)
-        .where(Enrollment.group_id == lesson.group_id)
-        .order_by(User.name, User.email)
-    ).all()
-    records = {
-        r.user_id: r
-        for r in db.scalars(select(Attendance).where(Attendance.session_id == lesson.id)).all()
-    }
-    students = []
-    counts: dict[str, int] = {"present": 0, "late": 0, "absent": 0, "excused": 0, "none": 0}
-    for user, _ in rows:
-        record = records.get(user.id)
-        status = record.status if record else "none"
-        counts[status] += 1
-        students.append(
-            {
-                "user_id": user.id,
-                "name": user.name,
-                "email": user.email,
-                "status": status,
-                "method": record.method if record else None,
-                "recorded_at": record.recorded_at.isoformat() if record else None,
-            }
-        )
-    return {"session": serialize_lesson(lesson), "counts": counts, "students": students}
+    return live_snapshot(db, lesson, now)
+
+
+LIVE_POLL_SECONDS = 1.0
+AUTH_TIMEOUT_SECONDS = 5.0
+
+
+@router.websocket("/ws/sessions/{session_id}/attendance")
+async def live_attendance_ws(websocket: WebSocket, session_id: int) -> None:
+    """Push živého přehledu. Token se posílá jako první zpráva ({"token": "..."}), ne v URL.
+
+    Server každou sekundu porovná stav s DB a pošle ho jen při změně.
+    """
+    app = websocket.app
+    settings: Settings = app.state.settings
+
+    def authorize(token: str) -> bool:
+        payload = read_auth_token(settings.secret_key, token, app.state.clock())
+        if payload is None:
+            return False
+        with app.state.session_factory() as db:
+            user = db.get(User, payload["uid"])
+            if user is None or user.role not in ("teacher", "admin"):
+                return False
+            lesson = db.get(LessonSession, session_id)
+            if lesson is None:
+                return False
+            group = db.get(Group, lesson.group_id)
+            return user.role == "admin" or group.teacher_id == user.id
+
+    def snapshot() -> dict | None:
+        with app.state.session_factory() as db:
+            lesson = db.get(LessonSession, session_id)
+            if lesson is None:
+                return None
+            return live_snapshot(db, lesson, app.state.clock())
+
+    await websocket.accept()
+    try:
+        message = await asyncio.wait_for(websocket.receive_json(), AUTH_TIMEOUT_SECONDS)
+        token = message.get("token") if isinstance(message, dict) else None
+        if not isinstance(token, str) or not await asyncio.to_thread(authorize, token):
+            await websocket.send_json({"error": "Neplatné přihlášení nebo chybí oprávnění"})
+            await websocket.close(code=1008)
+            return
+
+        last = None
+        while True:
+            current = await asyncio.to_thread(snapshot)
+            if current is None:
+                await websocket.close(code=1008)
+                return
+            if current != last:
+                await websocket.send_json(current)
+                last = current
+            try:
+                # Přijatou zprávu od klienta nic neřeší (slouží k udržení spojení); důležité je odpojení.
+                await asyncio.wait_for(websocket.receive_text(), LIVE_POLL_SECONDS)
+            except asyncio.TimeoutError:
+                pass
+    except (WebSocketDisconnect, asyncio.TimeoutError):
+        return
 
 
 @router.get("/groups/{group_id}/export.csv")
