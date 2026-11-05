@@ -27,6 +27,12 @@ class GroupIn(BaseModel):
     name: str = Field(min_length=1, max_length=200)
 
 
+class LocationIn(BaseModel):
+    latitude: float = Field(ge=-90, le=90)
+    longitude: float = Field(ge=-180, le=180)
+    radius_m: int = Field(ge=10, le=1000)
+
+
 class SessionIn(BaseModel):
     starts_at: datetime
     ends_at: datetime
@@ -66,6 +72,47 @@ def create_group(
     db.add(group)
     db.commit()
     return {"id": group.id, "course_id": course_id, "name": group.name, "teacher_id": teacher.id}
+
+
+def serialize_location(group: Group) -> dict:
+    enabled = group.latitude is not None and group.longitude is not None and group.geofence_radius_m is not None
+    return {
+        "enabled": enabled,
+        "latitude": group.latitude if enabled else None,
+        "longitude": group.longitude if enabled else None,
+        "radius_m": group.geofence_radius_m if enabled else None,
+    }
+
+
+@router.get("/groups/{group_id}/location")
+def get_location(group_id: int, db: Session = Depends(get_db), teacher: User = Depends(require_teacher)) -> dict:
+    group = _get_group(db, group_id)
+    ensure_can_manage_group(teacher, group)
+    return serialize_location(group)
+
+
+@router.put("/groups/{group_id}/location")
+def set_location(
+    group_id: int,
+    body: LocationIn,
+    db: Session = Depends(get_db),
+    teacher: User = Depends(require_teacher),
+) -> dict:
+    """Nastaví geofence učebny podle aktuální polohy vyučujícího (je třeba být ve třídě)."""
+    group = _get_group(db, group_id)
+    ensure_can_manage_group(teacher, group)
+    group.latitude, group.longitude, group.geofence_radius_m = body.latitude, body.longitude, body.radius_m
+    db.commit()
+    return serialize_location(group)
+
+
+@router.delete("/groups/{group_id}/location")
+def clear_location(group_id: int, db: Session = Depends(get_db), teacher: User = Depends(require_teacher)) -> dict:
+    group = _get_group(db, group_id)
+    ensure_can_manage_group(teacher, group)
+    group.latitude = group.longitude = group.geofence_radius_m = None
+    db.commit()
+    return serialize_location(group)
 
 
 @router.get("/me/groups")

@@ -6,6 +6,7 @@ import { getDeviceId } from '../lib/device';
 import { errorText } from '../lib/errors';
 import { formatDateTime, statusLabel } from '../lib/format';
 import { parseCheckinUrl } from '../lib/checkinUrl';
+import { getCurrentCoords } from '../lib/geo';
 import type { MyAttendance, MyAttendanceItem } from '../lib/types';
 
 type Result = { ok: boolean; text: string };
@@ -29,9 +30,15 @@ export function StudentCheckin() {
     setBusy(true);
     setResult(null);
     try {
+      // Poloha se zjistí jen pro ověření učebny; pokud ji prohlížeč nedá, server rozhodne (u geofence odmítne).
+      const coords = await getCurrentCoords();
       const record = await api<{ status: string }>('/attendance/checkin', {
         method: 'POST',
-        json: { ...body, device_id: deviceId },
+        json: {
+          ...body,
+          device_id: deviceId,
+          ...(coords ? { latitude: coords.latitude, longitude: coords.longitude, accuracy_m: coords.accuracy_m } : {}),
+        },
       });
       setResult({ ok: true, text: `Docházka zapsána: ${statusLabel(record.status)}` });
     } catch (err) {

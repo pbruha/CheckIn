@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from datetime import datetime, timezone
 
 from sqlalchemy import func, select
@@ -93,3 +94,15 @@ def absence_counts(db: Session, group_id: int) -> dict[int, int]:
         .group_by(Attendance.user_id)
     ).all()
     return {user_id: count for user_id, count in rows}
+
+
+EARTH_RADIUS_M = 6_371_000
+
+
+def distance_m(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    """Vzdálenost dvou bodů na zemi v metrech (haversinův vzorec)."""
+    p1, p2 = math.radians(lat1), math.radians(lat2)
+    dp = p2 - p1
+    dl = math.radians(lon2 - lon1)
+    a = math.sin(dp / 2) ** 2 + math.cos(p1) * math.cos(p2) * math.sin(dl / 2) ** 2
+    return 2 * EARTH_RADIUS_M * math.asin(math.sqrt(a))

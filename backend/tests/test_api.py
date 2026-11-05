@@ -298,3 +298,90 @@ def test_stats_flags_students_over_absence_limit(client, classroom, clock):
     assert by_email["alice@skola.cz"]["over_limit"] is False
     assert by_email["alice@skola.cz"]["attendance_rate"] == 1.0
     assert by_email["bob@skola.cz"]["attendance_rate"] == 0.0
+
+
+# --- geofence -----------------------------------------------------------------
+
+ROOM = (49.7400, 13.3700)
+NEAR = (49.7401, 13.3700)  # ~11 m od učebny
+FAR = (49.7500, 13.3700)  # ~1,1 km od učebny
+
+
+def set_room(client, c, radius=50):
+    r = client.put(f"/groups/{c['group']['id']}/location",
+                   json={"latitude": ROOM[0], "longitude": ROOM[1], "radius_m": radius},
+                   headers=c["teacher"])
+    assert r.status_code == 200, r.text
+    return r.json()
+
+
+def checkin_at(client, c, email, device, point, accuracy=10, token=None):
+    body = {"session_id": c["lesson"]["id"], "device_id": device, "qr_token": token or qr(client, c),
+            "latitude": point[0], "longitude": point[1], "accuracy_m": accuracy}
+    return client.post("/attendance/checkin", json=body, headers=c["students"][email])
+
+
+def test_geofence_is_off_by_default(client, classroom):
+    start(client, classroom)
+    r = checkin(client, classroom, "alice@skola.cz", DEVICE_A, qr_token=qr(client, classroom))
+    assert r.status_code == 200
+
+
+def test_teacher_sets_and_clears_location(client, classroom):
+    assert set_room(client, classroom)["enabled"] is True
+    gid = classroom["group"]["id"]
+    assert client.get(f"/groups/{gid}/location", headers=classroom["teacher"]).json()["radius_m"] == 50
+    assert client.delete(f"/groups/{gid}/location", headers=classroom["teacher"]).json()["enabled"] is False
+
+
+def test_student_cannot_set_location(client, classroom):
+    r = client.put(f"/groups/{classroom['group']['id']}/location",
+                   json={"latitude": ROOM[0], "longitude": ROOM[1], "radius_m": 50},
+                   headers=classroom["students"]["alice@skola.cz"])
+    assert r.status_code == 403
+
+
+def test_checkin_inside_room_is_verified(client, classroom):
+    set_room(client, classroom)
+    start(client, classroom)
+    r = checkin_at(client, classroom, "alice@skola.cz", DEVICE_A, NEAR)
+    assert r.status_code == 200, r.text
+    assert r.json()["status"] == "present"
+    # souřadnice se v odpovědi ani v databázi neobjevují
+    assert "latitude" not in r.text and "longitude" not in r.text
+
+
+def test_checkin_outside_room_is_rejected_and_not_recorded(client, classroom):
+    set_room(client, classroom)
+    start(client, classroom)
+    r = checkin_at(client, classroom, "alice@skola.cz", DEVICE_A, FAR)
+    assert r.status_code == 403
+    live = client.get(f"/sessions/{classroom['lesson']['id']}/attendance", headers=classroom["teacher"]).json()
+    assert {s["email"]: s["status"] for s in live["students"]}["alice@skola.cz"] == "none"
+
+
+def test_checkin_without_location_is_rejected_when_geofence_on(client, classroom):
+    set_room(client, classroom)
+    start(client, classroom)
+    r = checkin(client, classroom, "alice@skola.cz", DEVICE_A, qr_token=qr(client, classroom))
+    assert r.status_code == 400
+
+
+def test_checkin_with_poor_accuracy_is_rejected(client, classroom):
+    set_room(client, classroom)
+    start(client, classroom)
+    r = checkin_at(client, classroom, "alice@skola.cz", DEVICE_A, NEAR, accuracy=500)
+    assert r.status_code == 400
+
+
+def test_attendance_table_has_no_coordinate_columns():
+    from app.models import Attendance
+    columns = set(Attendance.__table__.columns.keys())
+    assert "latitude" not in columns and "longitude" not in columns
+    assert "geo_verified" in columns
+
+
+def test_distance_helper_matches_known_values():
+    from app.services import distance_m
+    assert round(distance_m(49.74, 13.37, 49.74, 13.37)) == 0
+    assert 1100 < distance_m(49.74, 13.37, 49.75, 13.37) < 1120  # 0,01° šířky ≈ 1,11 km

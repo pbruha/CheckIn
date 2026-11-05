@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, Index, String, UniqueConstraint
+from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Index, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from .db import Base
@@ -42,6 +42,10 @@ class Group(Base):
     course_id: Mapped[int] = mapped_column(ForeignKey("courses.id"))
     name: Mapped[str] = mapped_column(String(200))
     teacher_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    # Geofence učebny: souřadnice a poloměr v metrech. Pokud chybí, ověření polohy je vypnuté.
+    latitude: Mapped[float | None] = mapped_column(Float, nullable=True)
+    longitude: Mapped[float | None] = mapped_column(Float, nullable=True)
+    geofence_radius_m: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
 
 class Enrollment(Base):
@@ -77,6 +81,8 @@ class Attendance(Base):
     recorded_at: Mapped[datetime] = mapped_column(DateTime)
     device_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)  # HMAC, ne surový identifikátor
     ip: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    # Jen výsledek ověření polohy. Souřadnice studenta se neukládají.
+    geo_verified: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
 
 
 class Excuse(Base):

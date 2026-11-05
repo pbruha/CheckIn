@@ -31,6 +31,12 @@ uvicorn --factory app.main:create_app --reload
 | `UPLOAD_DIR` | `./uploads` | složka pro přílohy omluvenek (zálohovat, nepublikovat) |
 | `MAX_UPLOAD_BYTES` | `5242880` | maximální velikost přílohy (5 MB) |
 
+## Databáze a migrace
+
+Schéma se zatím vytváří přes `create_all`, který **nepřidává sloupce do existujících tabulek**.
+Při změně modelu proto u vývojové databáze smažte soubor a vytvořte ji znovu. Před nasazením
+(verze s reálnými daty) je nutné zavést migrace (Alembic).
+
 ## Testy
 
 ```bash
@@ -64,9 +70,13 @@ cd backend && python -m pytest -q
 - **Jedno zařízení = jeden student na hodinu** – ukládá se HMAC otisku zařízení, nikoli jeho identifikátor.
 - **Audit** – u každého zápisu čas, způsob a IP adresa.
 - **Zápis jen zapsaným studentům** a jen v běžící hodině.
+- **Geofence učebny** (volitelná) – učitel nastaví polohu a poloměr; při check-inu se ověří vzdálenost
+  (haversine). Nepřesná poloha (přesnost horší než 100 m) se odmítne. Souřadnice studenta se
+  neukládají, do databáze jde jen výsledek `geo_verified`. GPS neposkytuje absolutní jistotu, takže
+  jde o překážku, ne o úplnou ochranu.
 
 Omluvenka: schválená se u běžící hodiny promítne při uzavření, u uzavřené hodiny okamžitě.
 Omluvená absence se nepočítá do limitu.
 
-Zatím neimplementováno (plán verze 3): geofence, SSO, WebSockety
+Zatím neimplementováno (plán verze 3): SSO, WebSockety
 (živý přehled je zatím přes dotaz/polling), mazání dat po roce.

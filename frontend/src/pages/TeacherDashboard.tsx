@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api, downloadCsv } from '../lib/api';
 import { errorText } from '../lib/errors';
+import { getCurrentCoords } from '../lib/geo';
 import { formatTime, formatDateTime, isSameLocalDay, statusLabel, toLocalInputValue } from '../lib/format';
 import type { Lesson, MyGroup } from '../lib/types';
 
@@ -134,6 +135,8 @@ function GroupCard({ group }: { group: MyGroup }) {
         </form>
       </details>
 
+      <RoomLocation groupId={group.id} />
+
       <details>
         <summary>Import studentů (CSV)</summary>
         <p className="muted small">Soubor s hlavičkou <code>email,name</code>. Účty bez hesla se vytvoří jako studentské.</p>
@@ -169,5 +172,81 @@ function LessonList({ lessons, onStart }: { lessons: Lesson[]; onStart: (l: Less
         </li>
       ))}
     </ul>
+  );
+}
+
+type Location = { enabled: boolean; latitude: number | null; longitude: number | null; radius_m: number | null };
+
+/** Geofence učebny: nastavení podle aktuální polohy vyučujícího, kterou má mít ve třídě. */
+function RoomLocation({ groupId }: { groupId: number }) {
+  const [location, setLocation] = useState<Location | null>(null);
+  const [radius, setRadius] = useState(50);
+  const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    api<Location>(`/groups/${groupId}/location`)
+      .then(setLocation)
+      .catch((err) => setMessage({ ok: false, text: errorText(err) }));
+  }, [groupId]);
+
+  async function setHere() {
+    setBusy(true);
+    setMessage(null);
+    const coords = await getCurrentCoords(15000);
+    if (!coords) {
+      setBusy(false);
+      setMessage({ ok: false, text: 'Poloha není dostupná. Povolte ji v prohlížeči (vyžaduje HTTPS nebo localhost).' });
+      return;
+    }
+    try {
+      setLocation(
+        await api<Location>(`/groups/${groupId}/location`, {
+          method: 'PUT',
+          json: { latitude: coords.latitude, longitude: coords.longitude, radius_m: radius },
+        }),
+      );
+      setMessage({ ok: true, text: `Učebna nastavena, studenti musí být do ${radius} m od tohoto místa.` });
+    } catch (err) {
+      setMessage({ ok: false, text: errorText(err) });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function clear() {
+    setBusy(true);
+    try {
+      setLocation(await api<Location>(`/groups/${groupId}/location`, { method: 'DELETE' }));
+      setMessage({ ok: true, text: 'Ověřování polohy vypnuto.' });
+    } catch (err) {
+      setMessage({ ok: false, text: errorText(err) });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <details>
+      <summary>
+        Poloha učebny{' '}
+        <span className="muted small">{location?.enabled ? `(zapnuto, ${location.radius_m} m)` : '(vypnuto)'}</span>
+      </summary>
+      <div className="stack">
+        <p className="muted small">
+          Nastavte, když jste ve třídě. Studenti pak mohou zapsat docházku jen uvnitř této oblasti. Souřadnice
+          studentů se neukládají.
+        </p>
+        <label>
+          Poloměr (m)
+          <input type="number" min={10} max={1000} value={radius} onChange={(e) => setRadius(Number(e.target.value))} />
+        </label>
+        <div className="row wrap">
+          <button className="primary" disabled={busy} onClick={setHere}>Nastavit podle mé polohy</button>
+          {location?.enabled && <button disabled={busy} onClick={clear}>Vypnout ověřování</button>}
+        </div>
+        {message && <p className={message.ok ? 'success' : 'error'} role="status">{message.text}</p>}
+      </div>
+    </details>
   );
 }

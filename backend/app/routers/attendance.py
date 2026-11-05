@@ -25,7 +25,7 @@ from ..security import (
     qr_seconds_left,
     to_epoch,
 )
-from ..services import close_lesson, finalize_if_expired, serialize_attendance, serialize_lesson
+from ..services import close_lesson, distance_m, finalize_if_expired, serialize_attendance, serialize_lesson
 from .academics import get_lesson_or_404
 
 router = APIRouter(tags=["attendance"])
@@ -36,6 +36,10 @@ class CheckinIn(BaseModel):
     qr_token: str | None = None
     code: str | None = Field(default=None, min_length=6, max_length=6)
     device_id: str = Field(min_length=8, max_length=200)
+    # Poloha se použije jen k jednorázovému ověření a neukládá se.
+    latitude: float | None = Field(default=None, ge=-90, le=90)
+    longitude: float | None = Field(default=None, ge=-180, le=180)
+    accuracy_m: float | None = Field(default=None, ge=0, le=100000)
 
 
 class ManualIn(BaseModel):
@@ -47,6 +51,24 @@ def _lesson_for_teacher(db: Session, session_id: int, teacher: User) -> tuple[Le
     group = db.get(Group, lesson.group_id)
     ensure_can_manage_group(teacher, group)
     return lesson, group
+
+
+MAX_ACCURACY_M = 100  # horší přesnost GPS nelze spolehlivě vyhodnotit
+
+
+def _verify_location(db: Session, lesson: LessonSession, body: "CheckinIn", settings: Settings) -> bool | None:
+    """Vrací None, pokud geofence u skupiny není; jinak True, nebo vyvolá chybu mimo učebnu."""
+    group = db.get(Group, lesson.group_id)
+    if group.latitude is None or group.longitude is None or group.geofence_radius_m is None:
+        return None
+    if body.latitude is None or body.longitude is None:
+        raise HTTPException(status_code=400, detail="Pro zápis je potřeba povolit sdílení polohy")
+    if body.accuracy_m is not None and body.accuracy_m > MAX_ACCURACY_M:
+        raise HTTPException(status_code=400, detail="Poloha je příliš nepřesná, zkuste to znovu na otevřeném místě")
+    distance = distance_m(group.latitude, group.longitude, body.latitude, body.longitude)
+    if distance > group.geofence_radius_m:
+        raise HTTPException(status_code=403, detail="Nejste v učebně, docházku nelze zapsat")
+    return True
 
 
 def _is_enrolled(db: Session, user_id: int, group_id: int) -> bool:
@@ -158,6 +180,8 @@ def checkin(
     if clash is not None:
         raise HTTPException(status_code=409, detail="Z tohoto zařízení již proběhl zápis jiného studenta")
 
+    geo_verified = _verify_location(db, lesson, body, settings)
+
     late = now > lesson.starts_at + timedelta(minutes=settings.late_minutes)
     record = Attendance(
         session_id=lesson.id,
@@ -167,6 +191,7 @@ def checkin(
         recorded_at=now,
         device_hash=device_hash,
         ip=request.client.host if request.client else None,
+        geo_verified=geo_verified,
     )
     db.add(record)
     db.commit()
