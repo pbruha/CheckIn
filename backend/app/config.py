@@ -24,6 +24,10 @@ class Settings:
     sso_allowed_domain: str | None = None  # např. skola.cz – omezí přihlášení na e-maily z domény
     sso_password_login: bool = True  # lze vypnout, pokud má být přihlašování jen školním účtem
     frontend_url: str = "http://localhost:5173"
+    # Web Push (VAPID). Zapnuto, pokud je nastaven privátní klíč.
+    vapid_private_key: str | None = None  # PEM, v env s \n jako řádkové zalomení
+    vapid_public_key: str | None = None  # base64url, nepřímo se posílá prohlížeči
+    vapid_subject: str = "mailto:checkin@example.org"
 
 
 def load_settings() -> Settings:
@@ -46,4 +50,7 @@ def load_settings() -> Settings:
         sso_allowed_domain=(os.getenv("SSO_ALLOWED_DOMAIN") or "").lower() or None,
         sso_password_login=os.getenv("SSO_PASSWORD_LOGIN", "1") not in ("0", "false", "no"),
         frontend_url=os.getenv("FRONTEND_URL", "http://localhost:5173"),
+        vapid_private_key=(os.getenv("VAPID_PRIVATE_KEY") or "").replace("\\n", "\n") or None,
+        vapid_public_key=os.getenv("VAPID_PUBLIC_KEY") or None,
+        vapid_subject=os.getenv("VAPID_SUBJECT", "mailto:checkin@example.org"),
     )

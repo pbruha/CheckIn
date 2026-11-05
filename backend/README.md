@@ -52,6 +52,17 @@ python -m app.cli purge --before 2027-02-01 --scrub-audit-days 90
 Smaže hodiny před datem včetně docházky, omluvenek a příloh; u zbylých záznamů starších než N dní
 vynuluje IP adresy a otisky zařízení. Účty studentů zůstávají (smazání účtu je samostatný krok).
 
+## Mobilní upozornění (Web Push)
+
+Klíče vytvoříte příkazem `python -m app.cli vapid-keys` (vypíše dvojici `VAPID_PRIVATE_KEY` a
+`VAPID_PUBLIC_KEY`, které k sobě patří). Bez nich je funkce vypnutá a tlačítko se nezobrazí.
+Upozornění chodí: učiteli při nové omluvence, studentovi při rozhodnutí o omluvence. Odběry se ukládají
+per zařízení a neplatné (404/410 od push služby) se automaticky smažou.
+
+Ověřeno: podepsání a šifrování požadavku (`tests/test_push_sender.py`) a registrace odběru v prohlížeči
+v produkčním buildu. **Doručení na skutečné zařízení neověřeno** (v testovacím prostředí nejsou
+push služby prohlížečů dosažitelné). Před nasazením otestujte na telefonu přes HTTPS.
+
 ## Živý přehled (WebSocket)
 
 `WS /ws/sessions/{id}/attendance` – po připojení pošlete `{"token": "..."}`. Server posílá stav hodiny

@@ -6,7 +6,7 @@ import os
 import uuid
 from datetime import datetime, timedelta
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import select
@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session
 from ..config import Settings
 from ..deps import ensure_can_manage_group, get_current_user, get_db, get_now, get_settings, require_teacher
 from ..models import Attendance, Enrollment, Excuse, Group, LessonSession, User
+from ..push import notify_users
 from ..services import absence_counts, finalize_if_expired, serialize_lesson
 from .academics import get_lesson_or_404
 
@@ -72,6 +73,8 @@ def _load_excuse_for_manager(db: Session, excuse_id: int, user: User) -> tuple[E
 @router.post("/sessions/{session_id}/excuses", status_code=201)
 async def submit_excuse(
     session_id: int,
+    request: Request,
+    background: BackgroundTasks,
     text: str = Form(min_length=3, max_length=2000),
     file: UploadFile | None = File(default=None),
     db: Session = Depends(get_db),
@@ -119,6 +122,11 @@ async def submit_excuse(
     else:
         excuse.attachment_path = excuse.attachment_name = excuse.attachment_type = None
     db.commit()
+    group = db.get(Group, lesson.group_id)
+    background.add_task(
+        notify_users, request.app.state.session_factory, settings, request.app.state.push_sender,
+        [group.teacher_id], "Nová omluvenka", f"{user.name or user.email} – {group.name}", "/teacher/excuses",
+    )
     return serialize_excuse(excuse)
 
 
@@ -183,8 +191,11 @@ def download_attachment(
 def decide_excuse(
     excuse_id: int,
     body: DecisionIn,
+    request: Request,
+    background: BackgroundTasks,
     db: Session = Depends(get_db),
     teacher: User = Depends(require_teacher),
+    settings: Settings = Depends(get_settings),
     now: datetime = Depends(get_now),
 ) -> dict:
     excuse, _ = _load_excuse_for_manager(db, excuse_id, teacher)
@@ -218,6 +229,11 @@ def decide_excuse(
     excuse.decided_by = teacher.id
     excuse.decision_note = body.note
     db.commit()
+    verdict = "schválena" if excuse.status == "approved" else "zamítnuta"
+    background.add_task(
+        notify_users, request.app.state.session_factory, settings, request.app.state.push_sender,
+        [excuse.user_id], f"Omluvenka {verdict}", body.note or "Otevřete aplikaci pro detail", "/student/excuses",
+    )
     return serialize_excuse(excuse)
 
 

@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { isTeacher, useAuth } from '../lib/auth';
 import { Notifications } from './Notifications';
+import { PushToggle } from './PushToggle';
 
 export function Layout({ title, children }: { title: string; children: ReactNode }) {
   const { user, logout } = useAuth();
@@ -28,6 +29,7 @@ export function Layout({ title, children }: { title: string; children: ReactNode
       <main className="container">
         <Notifications />
         <h1>{title}</h1>
+        <PushToggle />
         {children}
       </main>
     </div>

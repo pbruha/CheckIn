@@ -8,7 +8,8 @@ from fastapi import FastAPI
 
 from .config import Settings, load_settings
 from .db import Base, make_session_factory
-from .routers import academics, attendance, auth, excuses, sso
+from .push import default_sender
+from .routers import academics, attendance, auth, excuses, push, sso
 from .services import utcnow
 
 
@@ -26,6 +27,7 @@ def create_app(
     app.state.settings = settings
     app.state.session_factory = session_factory
     app.state.clock = clock or utcnow
+    app.state.push_sender = default_sender  # testy mohou podstrčit vlastní odesílač
     app.state.http_transport = http_transport  # None = skutečná síť; testy podstrčí falešného IdP
 
     app.include_router(auth.router)
@@ -33,6 +35,7 @@ def create_app(
     app.include_router(attendance.router)
     app.include_router(excuses.router)
     app.include_router(sso.router)
+    app.include_router(push.router)
 
     @app.get("/health", tags=["meta"])
     def health() -> dict:

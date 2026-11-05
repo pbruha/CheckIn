@@ -52,6 +52,21 @@ def purge(before: str, scrub_days: int | None) -> None:
             print(f"Vynulována IP a otisky zařízení u {n} záznamů starších než {scrub_days} dní")
 
 
+def vapid_keys() -> None:
+    """Vygeneruje pár VAPID klíčů. Oba klíče patří k sobě – nesmí se míchat z různých běhů."""
+    import base64
+
+    from cryptography.hazmat.primitives import serialization
+    from py_vapid import Vapid01
+
+    vapid = Vapid01()
+    vapid.generate_keys()
+    public = vapid.public_key.public_bytes(serialization.Encoding.X962, serialization.PublicFormat.UncompressedPoint)
+    private_env = vapid.private_pem().decode().strip().replace("\n", "\\n")
+    print(f"VAPID_PRIVATE_KEY={private_env}")
+    print(f"VAPID_PUBLIC_KEY={base64.urlsafe_b64encode(public).decode().rstrip('=')}")
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="checkin")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -64,9 +79,12 @@ def main(argv: list[str] | None = None) -> int:
     pg.add_argument("--before", required=True, help="YYYY-MM-DD nebo ISO datum, např. 2027-02-01")
     pg.add_argument("--scrub-audit-days", type=int, default=None,
                     help="zároveň vynuluje IP a otisky zařízení u záznamů starších než N dní")
+    sub.add_parser("vapid-keys", help="vypíše pár klíčů pro Web Push (VAPID_PRIVATE_KEY, VAPID_PUBLIC_KEY)")
     args = parser.parse_args(argv)
 
-    if args.command == "create-user":
+    if args.command == "vapid-keys":
+        vapid_keys()
+    elif args.command == "create-user":
         create_user(args.email, args.name, args.role, args.password)
     elif args.command == "purge":
         purge(args.before, args.scrub_audit_days)
