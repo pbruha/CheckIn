@@ -1,0 +1,11 @@
+{
+  "name": "CheckIn – docházka",
+  "short_name": "CheckIn",
+  "description": "Docházka na hodiny předmětu Základy programátorské praxe",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f5f7fa",
+  "theme_color": "#1f4e79",
+  "lang": "cs",
+  "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}

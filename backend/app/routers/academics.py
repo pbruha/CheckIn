@@ -138,8 +138,10 @@ def create_session(
 
 
 @router.get("/groups/{group_id}/sessions")
-def list_sessions(group_id: int, db: Session = Depends(get_db), _: User = Depends(get_current_user)) -> list[dict]:
-    _get_group(db, group_id)
+def list_sessions(group_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_user)) -> list[dict]:
+    group = _get_group(db, group_id)
+    if group.teacher_id != user.id and user.role != "admin" and db.get(Enrollment, (user.id, group_id)) is None:
+        raise HTTPException(status_code=403, detail="Do skupiny nejste zapsáni")
     lessons = db.scalars(
         select(LessonSession).where(LessonSession.group_id == group_id).order_by(LessonSession.starts_at)
     ).all()

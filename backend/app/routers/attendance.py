@@ -173,6 +173,47 @@ def checkin(
     return serialize_attendance(record)
 
 
+@router.get("/me/attendance")
+def my_attendance(
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+    settings: Settings = Depends(get_settings),
+    now: datetime = Depends(get_now),
+) -> dict:
+    """Vlastní docházka napříč skupinami: stav u každé hodiny a počet absencí."""
+    group_rows = db.execute(
+        select(Group).join(Enrollment, Enrollment.group_id == Group.id).where(Enrollment.user_id == user.id)
+    ).scalars().all()
+    items = []
+    for group in group_rows:
+        lessons = db.scalars(
+            select(LessonSession).where(LessonSession.group_id == group.id).order_by(LessonSession.starts_at)
+        ).all()
+        for lesson in lessons:
+            finalize_if_expired(db, lesson, now)
+            record = db.get(Attendance, (lesson.id, user.id))
+            items.append(
+                {
+                    "session_id": lesson.id,
+                    "group_id": group.id,
+                    "group_name": group.name,
+                    "starts_at": lesson.starts_at.isoformat(),
+                    "ends_at": lesson.ends_at.isoformat(),
+                    "session_status": lesson.status,
+                    "status": record.status if record else None,
+                    "recorded_at": record.recorded_at.isoformat() if record else None,
+                }
+            )
+    items.sort(key=lambda i: i["starts_at"])
+    absences = sum(1 for i in items if i["status"] == "absent")
+    return {
+        "absences": absences,
+        "absence_limit": settings.absence_limit,
+        "remaining": max(0, settings.absence_limit - absences),
+        "items": items,
+    }
+
+
 @router.put("/sessions/{session_id}/attendance/{user_id}")
 def manual_attendance(
     session_id: int,

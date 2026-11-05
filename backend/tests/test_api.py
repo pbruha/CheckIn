@@ -218,6 +218,25 @@ def test_closing_marks_missing_students_absent(client, classroom, clock):
     assert statuses == {"alice@skola.cz": "present", "bob@skola.cz": "absent", "carol@skola.cz": "absent"}
 
 
+def test_student_sees_own_attendance_and_absences(client, classroom, clock):
+    start(client, classroom)
+    checkin(client, classroom, "alice@skola.cz", DEVICE_A, qr_token=qr(client, classroom))
+    clock.advance(hours=1, minutes=1)
+    bob = client.get("/me/attendance", headers=classroom["students"]["bob@skola.cz"]).json()
+    assert bob["absences"] == 1
+    assert bob["remaining"] == 1
+    assert bob["items"][0]["status"] == "absent"
+    alice = client.get("/me/attendance", headers=classroom["students"]["alice@skola.cz"]).json()
+    assert alice["absences"] == 0
+    assert alice["items"][0]["status"] == "present"
+
+
+def test_student_cannot_list_sessions_of_foreign_group(app, client, classroom):
+    make_user(app, "cizi@skola.cz", "Cizí", "student")
+    r = client.get(f"/groups/{classroom['group']['id']}/sessions", headers=login(client, "cizi@skola.cz"))
+    assert r.status_code == 403
+
+
 def test_checkin_after_end_is_rejected(client, classroom, clock):
     start(client, classroom)
     token = qr(client, classroom)
