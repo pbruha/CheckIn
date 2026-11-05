@@ -1,0 +1,12 @@
+{
+  "appId": "cz.skola.checkin",
+  "appName": "CheckIn",
+  "webDir": "www",
+  "server": {
+    "url": "http://192.168.1.20:8080",
+    "cleartext": true
+  },
+  "android": {
+    "allowMixedContent": false
+  }
+}
