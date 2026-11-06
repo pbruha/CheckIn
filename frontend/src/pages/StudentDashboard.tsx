@@ -23,9 +23,10 @@ export function StudentDashboard() {
     <div className="stack-lg">
       <section className={`card ${warning ? 'card-warning' : ''}`}>
         <p>
-          Absence: <strong>{data.absences}</strong> z {data.absence_limit} povolených
+          Neomluvené absence: <strong>{data.absences}</strong> (limit {data.absence_limit})
         </p>
-        {data.remaining === 0 && data.absences > 0 && <p className="error">Dosáhl jste limitu absencí.</p>}
+        {data.absences > data.absence_limit && <p className="error">Překročili jste limit absencí.</p>}
+        {data.absences === data.absence_limit && <p className="error">Dosáhl jste limitu absencí.</p>}
         {data.remaining === 1 && <p className="warning-text">Zbývá už jen 1 povolená absence.</p>}
         <div className="row wrap">
           <Link to="/student/checkin" className="button primary">Zapsat docházku</Link>

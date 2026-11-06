@@ -40,7 +40,7 @@ def load_settings() -> Settings:
         qr_window_seconds=int(os.getenv("QR_WINDOW_SECONDS", "15")),
         code_ttl_seconds=int(os.getenv("CODE_TTL_SECONDS", "60")),
         late_minutes=int(os.getenv("LATE_MINUTES", "10")),
-        absence_limit=int(os.getenv("ABSENCE_LIMIT", "2")),
+        absence_limit=int(os.getenv("ABSENCE_LIMIT", "6")),
         token_ttl_hours=int(os.getenv("TOKEN_TTL_HOURS", "12")),
         upload_dir=os.getenv("UPLOAD_DIR", "./uploads"),
         max_upload_bytes=int(os.getenv("MAX_UPLOAD_BYTES", str(5 * 1024 * 1024))),

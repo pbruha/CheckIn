@@ -26,7 +26,7 @@ uvicorn --factory app.main:create_app --reload
 | `QR_WINDOW_SECONDS` | `15` | perioda rotace QR kódu |
 | `CODE_TTL_SECONDS` | `60` | platnost číselného kódu |
 | `LATE_MINUTES` | `10` | hranice pro pozdní příchod |
-| `ABSENCE_LIMIT` | `2` | povolený počet neomluvených absencí |
+| `ABSENCE_LIMIT` | `6` | povolený počet neomluvených absencí (omluvená se nepočítá) |
 | `TOKEN_TTL_HOURS` | `12` | platnost přihlášení |
 | `UPLOAD_DIR` | `./uploads` | složka pro přílohy omluvenek (zálohovat, nepublikovat) |
 | `MAX_UPLOAD_BYTES` | `5242880` | maximální velikost přílohy (5 MB) |
