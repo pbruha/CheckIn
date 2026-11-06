@@ -1,5 +1,9 @@
 # Student: zápis docházky
 
+## Jak zápis funguje
+
+![Tok zápisu](img/checkin-flow.svg)
+
 1. Na hodině naskenujte QR kód z promítání (tlačítko **Spustit kameru**), nebo zadejte
    6místný číselný kód.
 2. Zápis proběhne jen v běžící hodině a jen na zařízení, ze kterého ještě nikdo jiný

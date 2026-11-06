@@ -17,12 +17,16 @@ nepřítomnost.
 - Povoleno je **6 neomluvených absencí** za semestr.
 - Limit se počítá jen z uzavřených hodin.
 
+## Škála absencí
+
+![Škála absencí](img/absence-scale.svg)
+
 ## Upozornění v aplikaci
 
 | Počet absencí | Co student uvidí |
 |---|---|
 | 5 | Upozornění: „Zbývá 1 povolená absence.“ |
-| 6 | Upozornění: „Zbývá 0 povolených absencí.“ Na přehledu: „Dosáhl jste limitu absencí.“ |
+| 6 | Upozornění: „Zbývá 0 povolená absence.“ Na přehledu: „Dosáhl jste limitu absencí.“ |
 | 7 a více | Upozornění: „Překročili jste limit absencí.“ Učitel vidí studenta ve statistikách označeného jako „Nad limit absencí“. |
 
 ![Student nad limitem](img/06-student-bob-nad-limitem.png)

@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 260" width="1000" height="260" role="img">
+<defs></defs>
+<rect x="40" y="50" width="270" height="130" rx="18" fill="#dbeafe"/>
+<text x="62" y="90" font-size="22" font-weight="700" fill="#1d4ed8" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif">Student odešle</text>
+<text x="62" y="118" font-size="16" fill="#1e3a8a" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif">Text a příloha (PDF, PNG, JPG)</text>
+<path d="M322 115 h38 m-8 -8 l8 8 l-8 8" fill="none" stroke="#64748b" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="372" y="50" width="270" height="130" rx="18" fill="#fef3c7"/>
+<text x="394" y="90" font-size="22" font-weight="700" fill="#b45309" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif">Učitel rozhodne</text>
+<text x="394" y="118" font-size="16" fill="#78350f" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif">Schválit, nebo zamítnout</text>
+<path d="M654 115 h38 m-8 -8 l8 8 l-8 8" fill="none" stroke="#64748b" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="704" y="20" width="270" height="100" rx="18" fill="#dcfce7"/>
+<text x="726" y="60" font-size="22" font-weight="700" fill="#15803d" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif">Schváleno</text>
+<text x="726" y="88" font-size="16" fill="#166534" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif">Nepřítomnost → omluven</text>
+<rect x="704" y="150" width="270" height="100" rx="18" fill="#fee2e2"/>
+<text x="726" y="190" font-size="22" font-weight="700" fill="#b91c1c" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif">Zamítnuto</text>
+<text x="726" y="218" font-size="16" fill="#7f1d1d" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif">Nepřítomnost zůstává</text>
+<path d="M654 90 q25 0 25 25 q0 -5 0 0" fill="none" stroke="none"/>
+<text x="40" y="232" font-size="17" fill="#475569" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif">Schválená omluvenka se do limitu absencí nepočítá.</text>
+</svg>

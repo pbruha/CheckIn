@@ -1,5 +1,7 @@
 # CheckIn – docházka: Základy programátorské praxe
 
+![CheckIn](img/banner.svg)
+
 Aplikace pro evidenci docházky na cvičení. Učitel spustí docházku, studenti se zapíšou
 naskenováním QR kódu nebo zadáním krátkého kódu. Studenti vidí svou docházku a počet absencí,
 omlouvají se přes aplikaci.

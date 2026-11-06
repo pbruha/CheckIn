@@ -9,6 +9,8 @@ Na úvodní stránce vidíte své skupiny a jejich hodiny. Hodinu přidáte pře
 
 ## 2. Spuštění a QR kód
 
+![Tok zápisu](img/checkin-flow.svg)
+
 Tlačítko **Spustit docházku** otevře obrazovku hodiny. Promítněte QR kód na projektor.
 - QR kód se mění každých 15 sekund, snímek obrazovky nepomůže.
 - Vedle něj je číselný kód (6 číslic, platí 60 s) pro studenty bez funkční kamery.

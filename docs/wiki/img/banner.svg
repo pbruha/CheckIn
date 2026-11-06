@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 320" width="1200" height="320" role="img">
+<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1f4e79"/><stop offset="1" stop-color="#3b82c4"/></linearGradient><linearGradient id="card" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff" stop-opacity="0.22"/><stop offset="1" stop-color="#ffffff" stop-opacity="0.08"/></linearGradient></defs>
+<rect width="1200" height="320" rx="28" fill="url(#g)"/>
+<circle cx="1110" cy="60" r="160" fill="#ffffff" fill-opacity="0.06"/>
+<circle cx="980" cy="290" r="110" fill="#ffffff" fill-opacity="0.05"/>
+<text x="64" y="150" fill="#ffffff" font-size="88" font-weight="700" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif">CheckIn</text>
+<text x="66" y="200" fill="#dbeafe" font-size="30" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif">Docházka pro cvičení Základy programátorské praxe</text>
+<text x="66" y="250" fill="#ffffff" font-size="22" font-weight="600" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif">Rychlý zápis přes QR kód · přehled absencí · omluvenky</text>
+<g transform="translate(830,70)">
+  <rect width="260" height="180" rx="22" fill="url(#card)" stroke="#ffffff" stroke-opacity="0.35"/>
+  <g fill="#ffffff">
+    <rect x="34" y="30" width="36" height="36" rx="6"/><rect x="82" y="30" width="12" height="12"/><rect x="104" y="30" width="12" height="12"/><rect x="82" y="52" width="12" height="12"/>
+    <rect x="190" y="30" width="36" height="36" rx="6"/><rect x="34" y="112" width="36" height="36" rx="6"/>
+    <rect x="98" y="98" width="12" height="12"/><rect x="120" y="98" width="12" height="12"/><rect x="142" y="120" width="12" height="12"/><rect x="164" y="98" width="12" height="12"/><rect x="98" y="120" width="12" height="12"/><rect x="120" y="142" width="12" height="12"/><rect x="186" y="120" width="12" height="12"/><rect x="208" y="142" width="12" height="12"/><rect x="186" y="164" width="12" height="12"/>
+  </g>
+  <circle cx="220" cy="160" r="26" fill="#22c55e"/>
+  <path d="M208 160 l9 9 l16 -18" fill="none" stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+</svg>

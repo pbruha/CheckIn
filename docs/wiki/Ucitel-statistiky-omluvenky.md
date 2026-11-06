@@ -10,6 +10,8 @@ a nepřítomných hodin. Student, který překročil limit 6 absencí, je zvýra
 
 ## Omluvenky
 
+![Tok omluvenky](img/excuse-flow.svg)
+
 Studenti posílají omluvenku s textem a přílohou (PDF, PNG nebo JPG, do 5 MB). Vy ji
 schválíte nebo zamítnete s poznámkou. Schválená omluvenka změní nepřítomnost na „omluven“
 a student tuto absenci nemá v limitu.
